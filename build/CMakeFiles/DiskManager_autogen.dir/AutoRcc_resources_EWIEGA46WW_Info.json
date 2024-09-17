@@ -1,0 +1,19 @@
+{
+	"BUILD_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build/DiskManager_autogen",
+	"CMAKE_BINARY_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager",
+	"CMAKE_SOURCE_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager",
+	"INCLUDE_DIR" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build/DiskManager_autogen/include",
+	"INPUTS" : [ "D:/Work/Qt5.9Samp/chap04/DiskManager/styles.qss" ],
+	"LOCK_FILE" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build/CMakeFiles/DiskManager_autogen.dir/AutoRcc_resources_EWIEGA46WW_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "resources" ],
+	"OUTPUT_CHECKSUM" : "EWIEGA46WW",
+	"OUTPUT_NAME" : "qrc_resources.cpp",
+	"RCC_EXECUTABLE" : "D:/anaconda3/Library/bin/rcc.exe",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "D:/Work/Qt5.9Samp/chap04/DiskManager/build/CMakeFiles/DiskManager_autogen.dir/AutoRcc_resources_EWIEGA46WW_Used.txt",
+	"SOURCE" : "D:/Work/Qt5.9Samp/chap04/DiskManager/resources.qrc",
+	"VERBOSITY" : 0
+}

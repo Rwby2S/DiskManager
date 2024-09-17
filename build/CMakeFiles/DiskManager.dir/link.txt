@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\DiskManager.dir/objects.a
+C:\mingw64\bin\ar.exe qc CMakeFiles\DiskManager.dir/objects.a @CMakeFiles\DiskManager.dir\objects1.rsp
+C:\mingw64\bin\g++.exe -g -mwindows -Wl,--whole-archive CMakeFiles\DiskManager.dir/objects.a -Wl,--no-whole-archive -o DiskManager.exe -Wl,--out-implib,libDiskManager.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\DiskManager.dir\linkLibs.rsp
