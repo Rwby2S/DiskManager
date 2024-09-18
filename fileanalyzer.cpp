@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QtCharts>
 #include <QDebug>
 
 /**
@@ -20,7 +21,7 @@ FileAnalyzer::FileAnalyzer(QWidget *parent)
     , ui(new Ui::FileAnalyzer)
     , fileSystemHandler(new FileSystemHandler(this))
     , fileScanner(new FileScanner(this))
-    , chartHandler(new ChartHandler(this))
+    , chartHandler(new ChartHandler(this, fileScanner))
 {
     ui->setupUi(this);
     setupUi();
@@ -29,6 +30,8 @@ FileAnalyzer::FileAnalyzer(QWidget *parent)
     // 连接FileScanner的信号和槽
     connect(fileScanner, &FileScanner::progressUpdated, this, &FileAnalyzer::onScanProgress);
     connect(fileScanner, &FileScanner::scanFinished, this, &FileAnalyzer::onScanCompleted);
+//    connect(chartHandler, &ChartHandler::folderChanged, this, &FileAnalyzer::onFolderChanged);
+    connect(backButton, &QPushButton::clicked, chartHandler, &ChartHandler::goToParentFolder);
 }
 
 FileAnalyzer::~FileAnalyzer()
@@ -36,7 +39,7 @@ FileAnalyzer::~FileAnalyzer()
     delete ui;
 }
 
-#include <QtCharts>
+
 
 void FileAnalyzer::setupUi()
 {
@@ -56,11 +59,14 @@ void FileAnalyzer::setupUi()
     analyzeButton = new QPushButton("Analyze", this);
     deleteButton = new QPushButton("Delete", this);
     moveButton = new QPushButton("Move", this);
+    backButton = new QPushButton("Back", this);
+
 
     toolbarLayout->addWidget(scanButton);
     toolbarLayout->addWidget(analyzeButton);
     toolbarLayout->addWidget(deleteButton);
     toolbarLayout->addWidget(moveButton);
+    toolbarLayout->addWidget(backButton);
     toolbarLayout->addStretch();
 
     mainLayout->addLayout(toolbarLayout);
@@ -104,7 +110,6 @@ void FileAnalyzer::setupUi()
     progressBar->setRange(0, 100);
     progressBar->setValue(0);
     progressBar->setTextVisible(true);
-
 
     // 2.2File Distribution Chart
     QChartView *chartView = chartHandler->getChartView();
@@ -210,14 +215,15 @@ void FileAnalyzer::onScanProgress(int percentage)
 }
 
 // chart
-void FileAnalyzer::updatePieChart(const QJsonObject &results)
+void FileAnalyzer::updatePieChart()
 {
-    chartHandler->updatePieChart(results);
+    chartHandler->updatePieChart();
 }
 
 // 处理扫描完成
-void FileAnalyzer::onScanCompleted(const QJsonObject &results)
+void FileAnalyzer::onScanCompleted()
 {
     qDebug() << "Scan completed.";
-    updatePieChart(results);  // 更新饼状图显示
+    updatePieChart();  // 更新饼状图显示
 }
+
