@@ -6,4 +6,4 @@ Qt编写的一个  对磁盘和文件的存储进行分析并可视化的工具
 鼠标悬浮可以查看到该文件的大小和名称
 
 ## 目前进展
-![Uploading image.png…]()
+![step1 exhibit img](images/step1.png)

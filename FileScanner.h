@@ -4,13 +4,17 @@
 #include <QObject>
 #include <QString>
 #include <QMap>
+#include <QThread>
+#include <QTimer>
 #include <QJsonObject>
+#include <QFileSystemWatcher>
+#include <QStandardPaths>
 
-struct ScanResult
-{
-    QMap<QString, qint64> folderSizes;
-    QMap<QString, ScanResult> subfolders;
-};
+//struct ScanResult
+//{
+//    QMap<QString, qint64> folderSizes;
+//    QMap<QString, ScanResult> subfolders;
+//};
 
 class FileScanner : public QObject
 {
@@ -18,20 +22,42 @@ class FileScanner : public QObject
 
 public:
     explicit FileScanner(QObject *parent = nullptr);
+    ~FileScanner();
+
     void startScan(const QString& path);
+    void cancleScan();
+
+    const QJsonObject& getCachedResults() const { return cachedResults; }
 
 signals:
     void progressUpdated(int percentage);
-    void scanFinished(const QJsonObject &results);
+    void scanFinished();
+
+private slots:
+    void onFileChanged(const QString& path);
+    void onDirectoryChanged(const QString& results);
 
 private:
-    ScanResult scanDirectory(const QString &path, int lastReportedPercentage);
-    QJsonObject convertToJson(const ScanResult& result);
-    void saveToJson(const QString& path, const QJsonObject& result);
-//    QString formatSize(qint64 bytes);
+    QThread scanThread;
+    QFileSystemWatcher *fileWatcher;
+    QTimer *rescanTimer;
+    QJsonObject cachedResults;
 
-    int totalFiles;
-    int scannedFiles;
+    QString rootPath;
+    bool isCancelled;
+    QString jsonDirPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ScanResults";
+
+
+    void scanDirectory(const QString &path, QJsonObject &results);
+//    QJsonObject convertToJson(const ScanResult& result);
+    void saveToJson(const QString& path, const QJsonObject& result);
+
+    void saveCachedResults();
+    void loadCachedResults();
+    void updateIncrementally(const QString &path);
+
+//    int totalFiles;
+//    int scannedFiles;
 };
 
 #endif // FILESCANNER_H

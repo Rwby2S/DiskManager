@@ -1,29 +1,50 @@
 #ifndef CHARTHANDLER_H
 #define CHARTHANDLER_H
 
+#include "FileScanner.h"
 #include <QObject>
 #include <QJsonObject>
 #include <QtCharts/QPieSeries>
 #include <QChartView>
+#include <QPushButton>
 
 class ChartHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit ChartHandler(QObject *parent = nullptr);
-    void updatePieChart(const QJsonObject &results);
+    explicit ChartHandler(QObject *parent = nullptr, FileScanner* scanner = nullptr);
+    void updatePieChart(const QString &currentPath = QString());
     ~ChartHandler();
 
     QChartView* getChartView() const;
 
 
+signals:
+    void folderChanged(const QString& path);
+
+public slots:
+    void goToParentFolder();
+
 private:
     QChartView* chartView;
+    QString curPath;
+    QJsonObject fullResults;
+    FileScanner* fileScanner;
 
     void setupSliceHoverEffects(QPieSlice* slice, const QString& itemName, qint64 size);
+
     QString formatSize(qint64 bytes);
+
     QColor generateColorFromIndex(int index);
-    // 定义一组颜色
+
+//    QString createChartTitle(const QString& path);
+
+    void handleSliceClicked(const QString &path);
+
+    QJsonArray findSubfolder(const QJsonArray &folders, const QString &path);
+
+    QJsonArray getSubItemsForPath(const QJsonObject& root, const QString& path);
+
     QList<QColor> colors = {
         QColor(255, 99, 71),   // Tomato
         QColor(30, 144, 255),  // Dodger Blue

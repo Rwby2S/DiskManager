@@ -43,8 +43,9 @@ private slots:
 
     // FileScannner slots
     void onScanClicked();
-    void onScanProgress(int percentage);  // 修改为与信号参数匹配
-    void onScanCompleted(const QJsonObject &results);  // 修改为与信号参数匹配
+    void onScanProgress(int percentage);
+    void onScanCompleted();
+//    void onFolderChanged(const QString &path);
 
 private:
     Ui::FileAnalyzer *ui;
@@ -65,6 +66,7 @@ private:
     QPushButton *analyzeButton;
     QPushButton *deleteButton;
     QPushButton *moveButton;
+    QPushButton *backButton;
 
     QStatusBar *statusBar;
 
@@ -72,8 +74,7 @@ private:
     void updateFileDetails(const QString& path);
     void analyzeDirectory(const QString &path);
     void deleteFile(const QString &path);
-
-    void updatePieChart(const QJsonObject &result);
+    void updatePieChart();
 
 };
 #endif // FILEANALYZER_H
