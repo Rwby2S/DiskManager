@@ -1,7 +1,7 @@
 #include "filescanner.h"
 #include <QDir>
 #include <QDirIterator>
-#include <QStandardPaths>
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFile>
@@ -10,117 +10,108 @@
 #include <QDebug>
 
 // 构造函数，初始化成员变量
-FileScanner::FileScanner(QObject *parent) : QObject(parent), totalFiles(0), scannedFiles(0) {}
+FileScanner::FileScanner(QObject *parent) : QObject(parent), isCancelled(false)
+{
+    fileWatcher = new QFileSystemWatcher(this);
+
+    rescanTimer = new QTimer(this);
+    rescanTimer->setSingleShot(true);
+    rescanTimer->setInterval(5000);
+
+    connect(fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileScanner::onFileChanged);
+    connect(fileWatcher, &QFileSystemWatcher::directoryChanged, this, &FileScanner::onDirectoryChanged);
+    connect(rescanTimer, &QTimer::timeout, this, [this]() { updateIncrementally(rootPath); });
+
+    loadCachedResults();
+}
+
+FileScanner::~FileScanner()
+{
+    saveCachedResults();
+    delete fileWatcher;
+    delete rescanTimer;
+}
 
 // 开始扫描函数
 void FileScanner::startScan(const QString &path)
 {
-    totalFiles = 0; // 初始化总文件数
-    scannedFiles = 0; // 初始化已扫描文件数
-    int lastReportedPercentage = -1;
+    rootPath = path;
+    isCancelled = false;
 
-    // 使用一个迭代器来遍历所有子目录和文件，同时统计总文件数
-    QDirIterator countIt(path, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-    while (countIt.hasNext()) {
-        countIt.next();
-        totalFiles++;
-    }
+    QThread *thread = QThread::create([this, path]{
+        QJsonObject results;
+        scanDirectory(path, results);
+        if(!isCancelled){
+            cachedResults = results;
+            saveCachedResults();
+            emit scanFinished();
+        }
+    });
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
 
-    qDebug() << "Total files to scan:" << totalFiles;
-
-    // 执行扫描并获取结果
-    ScanResult result = scanDirectory(path, lastReportedPercentage);
-    // 将结果转换为JSON对象
-    QJsonObject jsonResult = convertToJson(result);
-    // 将结果保存为JSON文件
-    saveToJson(path, jsonResult);
-    // 发射扫描完成信号
-    emit scanFinished(jsonResult);
+void FileScanner::cancleScan()
+{
+    isCancelled = true;
 }
 
 // 递归扫描目录的函数
-ScanResult FileScanner::scanDirectory(const QString &path, int lastReportedPercentage)
-{
-    ScanResult result;
-    QDir dir(path);
-    QElapsedTimer timer;
-    timer.start();  // 开始计时
+void FileScanner::scanDirectory(const QString& path, QJsonObject& results) {
+    QDirIterator it(path, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    qint64 totalSize = 0;
+    int fileCount = 0;
+    QJsonArray subItems;
 
-    // 使用QDirIterator递归遍历目录中的所有文件和子目录
-    QDirIterator it(path, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-    while (it.hasNext()) {
+    while (it.hasNext() && !isCancelled) {
         QString filePath = it.next();
         QFileInfo fileInfo(filePath);
-        QString absolutePath = fileInfo.absoluteFilePath();
+
+        QJsonObject item;
+        item["path"] = filePath;
 
         if (fileInfo.isDir()) {
-            // 处理子目录，递归调用scanDirectory
-            ScanResult subDirResult = scanDirectory(absolutePath, lastReportedPercentage);
-            result.subfolders[absolutePath] = subDirResult;
-            result.folderSizes[absolutePath] = subDirResult.folderSizes[absolutePath];
-            result.folderSizes[path] += result.folderSizes[absolutePath];
-        } else {
-            // 计算文件大小并累加到相应的文件夹中
-            qint64 size = fileInfo.size();
-
-            // 更新文件所在的所有父目录的大小
-            QString currentPath = absolutePath;
-            while (currentPath != path && currentPath != "") {
-                result.folderSizes[currentPath] += size;
-                currentPath = QFileInfo(currentPath).path();
+            QJsonObject subFolder;
+            scanDirectory(filePath, subFolder);
+            item["size"] = subFolder["size"];
+            if (subFolder.contains("subItems")) {
+                item["subItems"] = subFolder["subItems"];
             }
-            result.folderSizes[path] += size; // 更新根目录大小
-
-            scannedFiles++;
+            totalSize += subFolder["size"].toString().toLongLong();
+        } else {
+            item["size"] = QString::number(fileInfo.size());
+            totalSize += fileInfo.size();
         }
 
-        // 计算并发射进度更新信号
-        int percentage = (scannedFiles * 100) / totalFiles;
-        if (scannedFiles % 10 == 0 || percentage > lastReportedPercentage) {  // 每扫描10个文件或百分比增加时更新
-            emit progressUpdated(percentage);
-            lastReportedPercentage = percentage;
+        subItems.append(item);
+        fileWatcher->addPath(filePath);
 
-            // 计算扫描速度
-            double elapsedSeconds = timer.elapsed() / 1000.0;
-            double scanSpeed = scannedFiles / elapsedSeconds;
-
-            qDebug() << "Scanned" << scannedFiles << "of" << totalFiles << "files. Current size:"
-                     << result.folderSizes[path] << "B. Scan speed:" << qRound(scanSpeed) << "files/s";
+        if (++fileCount % 100 == 0) {
+            emit progressUpdated(fileCount);
         }
     }
 
-    return result;
+    results["path"] = path;
+    results["size"] = QString::number(totalSize);
+    if (!subItems.isEmpty()) {
+        results["subItems"] = subItems;
+    }
 }
 
-// 将扫描结果转换为JSON格式
-QJsonObject FileScanner::convertToJson(const ScanResult &result)
+void FileScanner::loadCachedResults()
 {
-    QJsonObject json;
-    QJsonArray folders;
-
-    // 遍历所有文件夹大小并将其转换为JSON对象
-    for (auto it = result.folderSizes.begin(); it != result.folderSizes.end(); ++it) {
-        QJsonObject folder;
-        folder["path"] = it.key();
-        folder["size"] = it.value();
-
-        if (result.subfolders.contains(it.key())) {
-            folder["subfolders"] = convertToJson(result.subfolders[it.key()]);
-        }
-
-        folders.append(folder);
+    QString jsonFilePath = jsonDirPath + "/scan_result.json";
+    QFile file(jsonFilePath);
+    if (file.open(QIODevice::ReadOnly)) {
+        cachedResults = QJsonDocument::fromJson(file.readAll()).object();
+        file.close();
     }
-
-    json["folders"] = folders;
-    return json;
 }
 
 // 将扫描结果保存为JSON文件
-void FileScanner::saveToJson(const QString &path, const QJsonObject &result)
+void FileScanner::saveCachedResults()
 {
     // 获取用户的文档目录
-    QString jsonDirPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ScanResults";
-
     // 确保目录存在，如果不存在则创建
     if (QDir().mkpath(jsonDirPath)) {
         qDebug() << "Directory created or already exists:" << jsonDirPath;
@@ -134,7 +125,7 @@ void FileScanner::saveToJson(const QString &path, const QJsonObject &result)
     QFile file(jsonFilePath);
 
     if (file.open(QIODevice::WriteOnly)) {
-        QJsonDocument document(result);
+        QJsonDocument document(cachedResults);
         file.write(document.toJson(QJsonDocument::Indented));
         file.close();
         qDebug() << "Scan result saved to" << jsonFilePath;
@@ -143,22 +134,21 @@ void FileScanner::saveToJson(const QString &path, const QJsonObject &result)
     }
 }
 
-// 将字节数转换为合适的单位（KB、MB、GB、TB）
-//QString FileScanner::formatSize(qint64 bytes)
-//{
-//    const qint64 KILOBYTE = 1024;
-//    const qint64 MEGABYTE = KILOBYTE * 1024;
-//    const qint64 GIGABYTE = MEGABYTE * 1024;
-//    const qint64 TERABYTE = GIGABYTE * 1024;
+void FileScanner::onFileChanged(const QString &path)
+{
+    rescanTimer->start();
+}
 
-//    if (bytes >= TERABYTE)
-//        return QString::number(bytes / (double)TERABYTE, 'f', 2) + " TB";
-//    else if (bytes >= GIGABYTE)
-//        return QString::number(bytes / (double)GIGABYTE, 'f', 2) + " GB";
-//    else if (bytes >= MEGABYTE)
-//        return QString::number(bytes / (double)MEGABYTE, 'f', 2) + " MB";
-//    else if (bytes >= KILOBYTE)
-//        return QString::number(bytes / (double)KILOBYTE, 'f', 2) + " KB";
-//    else
-//        return QString::number(bytes) + " B";
-//}
+void FileScanner::onDirectoryChanged(const QString &path)
+{
+    rescanTimer->start();
+}
+
+void FileScanner::updateIncrementally(const QString &path)
+{
+    QJsonObject newResults;
+    scanDirectory(path, newResults);
+    cachedResults = newResults;
+    saveCachedResults();
+    emit scanFinished();
+}
