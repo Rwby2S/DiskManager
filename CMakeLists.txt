@@ -17,6 +17,17 @@ set(PROJECT_SOURCES
         fileanalyzer.h
         fileanalyzer.ui
         resources.qrc
+        charthandler.cpp
+        charthandler.h
+        filedetailswidget.cpp
+        filedetailswidget.h
+        filedetailswidget.ui
+        FileScanner.cpp
+        FileScanner.h
+        FileSystemHandler.cpp
+        FileSystemHandler.h
+        layeredfilescanner.cpp
+        layeredfilescanner.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -24,9 +35,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         resources.qrc
+        fileanalyzer.h fileanalyzer.cpp fileanalyzer.ui
         FileScanner.h FileScanner.cpp
         FileSystemHandler.h FileSystemHandler.cpp
-        charthandler.h charthandler.cpp      
+        charthandler.h charthandler.cpp
+        filedetailswidget.h filedetailswidget.cpp filedetailswidget.ui
+        layeredfilescanner.h layeredfilescanner.cpp
     )
 else()
     if(ANDROID)
