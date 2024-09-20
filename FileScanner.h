@@ -24,7 +24,7 @@ public:
     explicit FileScanner(QObject *parent = nullptr);
     ~FileScanner();
 
-    void startScan(const QString& path);
+    virtual void startScan(const QString& path);
     void cancleScan();
 
     const QJsonObject& getCachedResults() const { return cachedResults; }
@@ -37,27 +37,25 @@ private slots:
     void onFileChanged(const QString& path);
     void onDirectoryChanged(const QString& results);
 
-private:
-    QThread scanThread;
+protected:
+    QString rootPath;
+    QJsonObject cachedResults;
     QFileSystemWatcher *fileWatcher;
     QTimer *rescanTimer;
-    QJsonObject cachedResults;
-
-    QString rootPath;
     bool isCancelled;
-    QString jsonDirPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ScanResults";
 
-
-    void scanDirectory(const QString &path, QJsonObject &results);
-//    QJsonObject convertToJson(const ScanResult& result);
-    void saveToJson(const QString& path, const QJsonObject& result);
-
-    void saveCachedResults();
+    virtual void scanDirectory(const QString& path, QJsonObject& results);
     void loadCachedResults();
+    void saveCachedResults();
     void updateIncrementally(const QString &path);
 
-//    int totalFiles;
-//    int scannedFiles;
+private:
+    QThread scanThread;
+    QString jsonDirPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/ScanResults";
+
+    void saveToJson(const QString& path, const QJsonObject& result);
+
+
 };
 
 #endif // FILESCANNER_H

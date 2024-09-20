@@ -1,7 +1,7 @@
 #include "filescanner.h"
 #include <QDir>
 #include <QDirIterator>
-
+#include <windows.h>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFile>
@@ -21,8 +21,6 @@ FileScanner::FileScanner(QObject *parent) : QObject(parent), isCancelled(false)
     connect(fileWatcher, &QFileSystemWatcher::fileChanged, this, &FileScanner::onFileChanged);
     connect(fileWatcher, &QFileSystemWatcher::directoryChanged, this, &FileScanner::onDirectoryChanged);
     connect(rescanTimer, &QTimer::timeout, this, [this]() { updateIncrementally(rootPath); });
-
-    loadCachedResults();
 }
 
 FileScanner::~FileScanner()
@@ -103,8 +101,9 @@ void FileScanner::loadCachedResults()
     QString jsonFilePath = jsonDirPath + "/scan_result.json";
     QFile file(jsonFilePath);
     if (file.open(QIODevice::ReadOnly)) {
-        cachedResults = QJsonDocument::fromJson(file.readAll()).object();
-        file.close();
+        QByteArray data = file.readAll();
+        QJsonDocument doc(QJsonDocument::fromJson(data));
+        cachedResults = doc.object();
     }
 }
 
