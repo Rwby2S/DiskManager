@@ -20,6 +20,8 @@ public:
 
 protected:
 //    QJsonObject LayeredFileScanner::scanDirectory(const QString& path);
+    // 覆盖基类的 scanDirectory 方法
+    void scanDirectory(const QString& path, QJsonObject& results) override;
 
 private:
     QThreadPool threadPool;

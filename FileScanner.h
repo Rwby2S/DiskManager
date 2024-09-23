@@ -24,7 +24,7 @@ public:
     explicit FileScanner(QObject *parent = nullptr);
     ~FileScanner();
 
-    virtual void startScan(const QString& path);
+    virtual void startScan(const QString& path) = 0;
     void cancleScan();
 
     const QJsonObject& getCachedResults() const { return cachedResults; }
@@ -45,6 +45,7 @@ protected:
     bool isCancelled;
 
     virtual void scanDirectory(const QString& path, QJsonObject& results);
+    QJsonObject doScanDirectory(const QString& path);
     void loadCachedResults();
     void saveCachedResults();
     void updateIncrementally(const QString &path);

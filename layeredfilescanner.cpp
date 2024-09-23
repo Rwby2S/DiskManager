@@ -34,6 +34,11 @@ void LayeredFileScanner::startScan(const QString& path) {
     emit scanFinished();
 }
 
+void LayeredFileScanner::scanDirectory(const QString& path, QJsonObject& results)
+{
+    // 不使用该函数
+}
+
 QJsonObject LayeredFileScanner::scanDirectory(const QString& path) {
     QJsonObject result;
     result["path"] = path;

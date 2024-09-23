@@ -39,7 +39,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         FileScanner.h FileScanner.cpp
         FileSystemHandler.h FileSystemHandler.cpp
         charthandler.h charthandler.cpp
-        filedetailswidget.h filedetailswidget.cpp filedetailswidget.ui
+        filedetailswidget.h filedetailswidget.cpp
         layeredfilescanner.h layeredfilescanner.cpp
     )
 else()
