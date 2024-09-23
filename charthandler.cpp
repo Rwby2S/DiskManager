@@ -96,6 +96,14 @@ void ChartHandler::updatePieChart(const QString& currentPath)
     chartView->setChart(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
     chartView->update();  // 更新视图
+    // 发射信号，传递当前目录的信息
+    try {
+       emit directoryDataUpdated(subItems);
+        // 使用 QMetaObject::invokeMethod 更新 FIleDetailsWidget
+
+    } catch (const std::exception& e) {
+        qCritical() << "Exception in updatePieChart emit function:" << e.what();
+    }
 
     qDebug() << "updatePieChart finished";
 }

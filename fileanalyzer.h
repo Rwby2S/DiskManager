@@ -10,6 +10,8 @@
 #include <QProgressBar>
 #include <QFileSystemModel>
 
+#include "filedetailswidget.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class FileAnalyzer; }
@@ -60,7 +62,7 @@ private:
     QTreeView *fileTreeView;
 //    QChartView *chartView;
     QLabel *scanStatusLabel;
-    QLabel *detailsLabel;
+//    QLabel *detailsLabel;
     // Buttons
     QPushButton *scanButton;
     QPushButton *analyzeButton;
@@ -69,12 +71,16 @@ private:
     QPushButton *backButton;
 
     QStatusBar *statusBar;
+    FileDetailsWidget *fileDetailsWidget;
+
+    QString currentScanPath;
 
     void setupUi();
     void updateFileDetails(const QString& path);
     void analyzeDirectory(const QString &path);
     void deleteFile(const QString &path);
-    void updatePieChart();
+    void updatePieChart(const QString& path);
+    void onFolderChanged(const QString &path);
 
 };
 #endif // FILEANALYZER_H

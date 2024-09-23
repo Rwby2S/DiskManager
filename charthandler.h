@@ -21,6 +21,7 @@ public:
 
 signals:
     void folderChanged(const QString& path);
+    void directoryDataUpdated(const QJsonArray& directoryInfo);
 
 public slots:
     void goToParentFolder();

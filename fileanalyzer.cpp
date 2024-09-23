@@ -1,6 +1,6 @@
 #include "fileanalyzer.h"
 #include "./ui_fileanalyzer.h"
-#include "FileScanner.h"
+#include "layeredfilescanner.h"
 #include "FileSystemHandler.h"
 #include "charthandler.h"
 
@@ -20,8 +20,9 @@ FileAnalyzer::FileAnalyzer(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::FileAnalyzer)
     , fileSystemHandler(new FileSystemHandler(this))
-    , fileScanner(new FileScanner(this))
+    , fileScanner(new LayeredFileScanner(this))
     , chartHandler(new ChartHandler(this, fileScanner))
+    , fileDetailsWidget(new FileDetailsWidget(this))
 {
     ui->setupUi(this);
     setupUi();
@@ -30,8 +31,9 @@ FileAnalyzer::FileAnalyzer(QWidget *parent)
     // 连接FileScanner的信号和槽
     connect(fileScanner, &FileScanner::progressUpdated, this, &FileAnalyzer::onScanProgress);
     connect(fileScanner, &FileScanner::scanFinished, this, &FileAnalyzer::onScanCompleted);
-//    connect(chartHandler, &ChartHandler::folderChanged, this, &FileAnalyzer::onFolderChanged);
+    connect(chartHandler, &ChartHandler::folderChanged, this, &FileAnalyzer::onFolderChanged);
     connect(backButton, &QPushButton::clicked, chartHandler, &ChartHandler::goToParentFolder);
+
 }
 
 FileAnalyzer::~FileAnalyzer()
@@ -129,8 +131,8 @@ void FileAnalyzer::setupUi()
     rightLayout->addWidget(chartView, 2);
 
     // 3.Details panel
-    detailsLabel = new QLabel("File Details", this);
-    rightLayout->addWidget(detailsLabel, 1);
+//    detailsLabel = new QLabel("File Details", this);
+    rightLayout->addWidget(fileDetailsWidget, 1);
 
     contentLayout->addLayout(rightLayout, 1);
     mainLayout->addLayout(contentLayout);
@@ -146,7 +148,11 @@ void FileAnalyzer::setupUi()
     connect(analyzeButton, &QPushButton::clicked, this, &FileAnalyzer::onAnalyzeClicked);
     connect(deleteButton, &QPushButton::clicked, this, &FileAnalyzer::onDeleteClicked);
     connect(moveButton, &QPushButton::clicked, this, &FileAnalyzer::onMoveClicked);
-    connect(fileTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &FileAnalyzer::onFileSelected);
+    connect(fileTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            &FileAnalyzer::onFileSelected);
+    // 连接chart和fileDetails的信号和槽
+    connect(chartHandler, &ChartHandler::directoryDataUpdated, fileDetailsWidget,
+            &FileDetailsWidget::updateDetails);
 }
 
 /**
@@ -163,22 +169,21 @@ void FileAnalyzer::onScanClicked()
     }
 
     QModelIndex selectedIndex = fileTreeView->currentIndex();
-    QString directory;
 
     if(selectedIndex.isValid()){
         // 如果有选中的文件夹，则获取其路径
-        directory = fileSystemHandler->getSelectedPath(selectedIndex);
+        currentScanPath  = fileSystemHandler->getSelectedPath(selectedIndex);
     }
 
     // 如果没有选中的文件夹，则使用根目录
-    if(directory.isEmpty()){
-        directory = "";     // 设置为根目录
+    if(currentScanPath .isEmpty()){
+        currentScanPath  = "";     // 设置为根目录
     }
 
     // 重置进度条
     progressBar->setValue(0);
     // 开始扫描
-    fileScanner->startScan(directory);
+    fileScanner->startScan(currentScanPath);
 
 }
 
@@ -215,15 +220,27 @@ void FileAnalyzer::onScanProgress(int percentage)
 }
 
 // chart
-void FileAnalyzer::updatePieChart()
+void FileAnalyzer::updatePieChart(const QString& path)
 {
-    chartHandler->updatePieChart();
+    chartHandler->updatePieChart(path);
 }
 
 // 处理扫描完成
 void FileAnalyzer::onScanCompleted()
 {
     qDebug() << "Scan completed.";
-    updatePieChart();  // 更新饼状图显示
+    updatePieChart(currentScanPath);  // 更新饼状图显示
+}
+
+void FileAnalyzer::onFolderChanged(const QString &path)
+{
+    // 更新文件树的选择
+    QModelIndex index = fileSystemHandler->getFileSystemModel()->index(path);
+    fileTreeView->setCurrentIndex(index);
+
+    // 更新图表
+    chartHandler->updatePieChart(path);
+
+    // FileDetailsWidget 会通过 ChartHandler 的信号自动更新
 }
 
