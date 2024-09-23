@@ -27,6 +27,7 @@ private:
     QTableWidget *detailsTable;
 
     void setupUI();
+    void loadStyleSheet();
     QString formatSize(qint64 size) const;
 };
 
