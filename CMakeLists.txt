@@ -41,6 +41,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         charthandler.h charthandler.cpp
         filedetailswidget.h filedetailswidget.cpp
         layeredfilescanner.h layeredfilescanner.cpp
+        contextmenuhandler.h contextmenuhandler.cpp
     )
 else()
     if(ANDROID)

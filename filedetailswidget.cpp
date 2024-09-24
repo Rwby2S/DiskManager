@@ -6,10 +6,12 @@
 #include <QJsonArray>
 #include <QFileInfo>
 #include <QFile>
+#include <QContextMenuEvent>
 
-FileDetailsWidget::FileDetailsWidget(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::FileDetailsWidget)
+FileDetailsWidget::FileDetailsWidget(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::FileDetailsWidget)
+    , pathColumn(0) // 初始化文件路径在第一列
 {
     ui->setupUi(this);
     setupUI();
@@ -100,4 +102,22 @@ void FileDetailsWidget::loadStyleSheet()
         this->setStyleSheet(styleSheet);
         file.close();
     }
+}
+
+/***********************************************************
+ *                功能: 右键菜单选择文件                   *
+ ***********************************************************/
+void FileDetailsWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    emit customContextMenuRequested(event->globalPos());
+}
+
+QString FileDetailsWidget::getSelectedFilePath() const
+{
+    // 通过 detailsTable 指针访问表格数据
+    QList<QTableWidgetItem*> selectedItems = detailsTable->selectedItems();
+    if (!selectedItems.isEmpty()) {
+        return detailsTable->item(selectedItems.first()->row(), pathColumn)->text();
+    }
+    return QString();
 }
